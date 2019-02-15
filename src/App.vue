@@ -1,12 +1,25 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+    <div class="table-wrapper">
+      <GTable :data="tableData" />
     </div>
-    <router-view/>
   </div>
 </template>
+
+<script>
+import GTable from '@/components/GTable.vue'
+import tableData from '../data.json'
+
+export default {
+  components: { GTable },
+  data() {
+    return {
+      tableData,
+    }
+  },
+}
+</script>
+
 
 <style lang="scss">
 #app {
@@ -25,5 +38,11 @@
       color: #42b983;
     }
   }
+}
+
+.table-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
