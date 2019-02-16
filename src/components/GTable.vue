@@ -23,7 +23,7 @@
       </thead>
       <tbody>
         <tr
-          v-for="item in localDataItems"
+          v-for="item in activePageData"
           :key="item.name"
           class="table-row"
         >
@@ -48,7 +48,8 @@
       <GTablePagination
         v-if="paginated"
         v-model="activePage"
-        :total-items="localDataItems.length"
+        :total-items="totalItems"
+        :per-page="perPage"
         class="table-pagination"
       />
     </div>
@@ -82,10 +83,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    perPage: {
+      type: Number,
+      default: 10,
+    },
   },
   data() {
     return {
-      localDataItems: [...this.data.items],
+      filteredData: [...this.data.items],
       filterText: '',
       descendSort: true,
       sortKey: null,
@@ -96,12 +101,28 @@ export default {
     sortClass() {
       return this.descendSort ? 'table-head--sort-desc' : 'table-head--sort-asc'
     },
+    totalItems() {
+      return this.filterText ? this.filteredData.length : this.data.items.length
+    },
+    activePageData() {
+      return this.filteredData.slice(
+        (this.activePage - 1) * this.perPage,
+        this.activePage * this.perPage,
+      )
+    },
   },
   watch: {
     filterText() {
       this.filterDataItems()
       this.sortDataItems()
     },
+    activePage() {
+      this.filterDataItems()
+      this.sortDataItems()
+    },
+  },
+  mounted() {
+    this.filterDataItems()
   },
   methods: {
     filterDataItems() {
@@ -109,12 +130,12 @@ export default {
         Object.values(item).some(value => value.includes(this.filterText)),
       )
 
-      this.localDataItems = [...filteredDataItems]
+      this.filteredData = [...filteredDataItems]
     },
     sortDataItems() {
       const orderSortFn = this.descendSort ? descend : ascend
       const parsePropFn = this.getParsePropFn(this.sortKey)
-      this.localDataItems = [...sort(orderSortFn(parsePropFn), this.localDataItems)]
+      this.filteredData = [...sort(orderSortFn(parsePropFn), this.filteredData)]
     },
     onClickTitle(key) {
       if (this.sortKey === key) {

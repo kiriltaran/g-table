@@ -4,10 +4,16 @@
       <li
         v-for="(page, index) in pages"
         :key="index"
-        :class="['list-item', { 'highlight': isCurrentPage(page) }]"
+        :class="['list-item', { 'list-item--active': isActivePage(page) }]"
       >
+        <span
+          v-if="isDivider(page)"
+          class="divider"
+        >
+          ...
+        </span>
         <button
-          :disabled="isDotsButton(page)"
+          v-else
           @click="changePage(page)"
         >
           {{ page }}
@@ -21,8 +27,6 @@
 import { range } from 'ramda'
 
 const MAX_VISIBLE_PAGES = 5
-const MAX_VISIBLE_ITEMS = 10
-const DIVIDERS_CONTENT = '..'
 export default {
   name: 'GTablePagination',
   props: {
@@ -34,6 +38,10 @@ export default {
       type: Number,
       required: true,
     },
+    perPage: {
+      type: Number,
+      required: true,
+    },
   },
   computed: {
     pages() {
@@ -41,53 +49,57 @@ export default {
         return range(1, this.totalPages + 1)
       }
       if (this.value < MAX_VISIBLE_PAGES) {
-        return [...range(1, MAX_VISIBLE_PAGES + 1), DIVIDERS_CONTENT, this.totalPages]
+        return [...range(1, MAX_VISIBLE_PAGES + 1), 'divider', this.totalPages]
       }
       if (this.totalPages - MAX_VISIBLE_PAGES + 1 < this.value) {
         return [
           1,
-          DIVIDERS_CONTENT,
+          'divider',
           ...range(this.totalPages - MAX_VISIBLE_PAGES + 1, this.totalPages + 1),
         ]
       }
-      return [
-        1,
-        DIVIDERS_CONTENT,
-        this.value - 1,
-        this.value,
-        this.value + 1,
-        DIVIDERS_CONTENT,
-        this.totalPages,
-      ]
+      return [1, 'divider', this.value - 1, this.value, this.value + 1, 'divider', this.totalPages]
     },
     totalPages() {
-      return Math.ceil(this.totalItems / MAX_VISIBLE_ITEMS)
+      return Math.ceil(this.totalItems / this.perPage)
+    },
+  },
+  watch: {
+    totalItems() {
+      this.changePage(1)
     },
   },
   methods: {
     changePage(newPage) {
       this.$emit('input', newPage)
     },
-    isCurrentPage(page) {
+    isActivePage(page) {
       return this.value === page
     },
-    isDotsButton(page) {
-      return page === DIVIDERS_CONTENT
+    isDivider(page) {
+      return page === 'divider'
     },
   },
 }
 </script>
 
 <style lang="scss" scoped>
-.highlight {
-  transform: scale(1.3);
-  background: none;
-  transition: all 300ms;
-}
 .g-table-pagination {
   &__list {
     display: flex;
     list-style-type: none;
   }
+}
+
+.list-item {
+  &--active {
+    transform: scale(1.2);
+    background: none;
+    transition: transform 300ms;
+  }
+}
+
+.divider {
+  margin: 0 5px;
 }
 </style>
