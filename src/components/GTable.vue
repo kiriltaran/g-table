@@ -34,12 +34,10 @@
             v-html="getCellContent(value)"
           />
           <td class="table-cell table-cell--actions">
-            <button
-              class="edit-btn"
-              @click="onClickEditBtn(item)"
-            >
-              Edit
-            </button>
+            <slot
+              :row="item"
+              name="row-actions"
+            />
           </td>
         </tr>
       </tbody>
@@ -146,10 +144,6 @@ export default {
       }
 
       this.sortDataItems()
-    },
-    onClickEditBtn(item) {
-      // eslint-disable-next-line no-alert
-      alert('edit', item)
     },
     getCellContent(data) {
       if (!this.filterText) {
