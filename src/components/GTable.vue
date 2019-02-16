@@ -1,27 +1,29 @@
 <template>
   <div class="g-table">
-    <input
-      v-model="filterText"
-      type="text"
-      class="g-table__input"
-    >
+    <div class="g-table__top-row">
+      <GTableFilter
+        v-if="filtered"
+        v-model="filterText"
+        class="table-filter"
+      />
+    </div>
     <table class="g-table__table">
       <thead>
         <tr>
           <th
             v-for="(title, key) in data.titles"
             :key="key"
-            class="table-head"
-            :class="key === sortKey ? sortClass : null"
+            :class="['table-head',{[sortClass]: key === sortKey}]"
             @click="onClickTitle(key)"
           >
             {{ title }}
           </th>
+          <th class="table-head" />
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="item in dataItems"
+          v-for="item in localDataItems"
           :key="item.name"
           class="table-row"
         >
@@ -29,10 +31,9 @@
             v-for="(value, key) in item"
             :key="key"
             class="table-cell"
-          >
-            {{ value }}
-          </td>
-          <td>
+            v-html="getCellContent(value)"
+          />
+          <td class="table-cell table-cell--actions">
             <button
               class="edit-btn"
               @click="onClickEditBtn(item)"
@@ -43,14 +44,28 @@
         </tr>
       </tbody>
     </table>
+    <div class="g-table__top-row">
+      <GTablePagination
+        v-if="paginated"
+        v-model="activePage"
+        :total-items="localDataItems.length"
+        class="table-pagination"
+      />
+    </div>
   </div>
 </template>
 
 <script>
-import { descend, ascend, sort, prop } from 'ramda'
+import GTableFilter from '@/components/GTableFilter.vue'
+import GTablePagination from '@/components/GTablePagination.vue'
+import { descend, ascend, sort, prop, compose } from 'ramda'
 
 export default {
   name: 'GTable',
+  components: {
+    GTableFilter,
+    GTablePagination,
+  },
   props: {
     data: {
       type: Object,
@@ -59,13 +74,22 @@ export default {
         return value && value.titles && value.items
       },
     },
+    filtered: {
+      type: Boolean,
+      default: false,
+    },
+    paginated: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
+      localDataItems: [...this.data.items],
       filterText: '',
-      dataItems: [...this.data.items],
       descendSort: true,
       sortKey: null,
+      activePage: 1,
     }
   },
   computed: {
@@ -76,19 +100,21 @@ export default {
   watch: {
     filterText() {
       this.filterDataItems()
+      this.sortDataItems()
     },
   },
   methods: {
     filterDataItems() {
-      const filteredDataItems = this.dataItems.filter(item =>
+      const filteredDataItems = this.data.items.filter(item =>
         Object.values(item).some(value => value.includes(this.filterText)),
       )
 
-      this.dataItems = this.filterText === '' ? [...this.data.items] : [...filteredDataItems]
+      this.localDataItems = [...filteredDataItems]
     },
-    sortDataItems(key) {
+    sortDataItems() {
       const orderSortFn = this.descendSort ? descend : ascend
-      this.dataItems = [...sort(orderSortFn(prop(key)), this.dataItems)]
+      const parsePropFn = this.getParsePropFn(this.sortKey)
+      this.localDataItems = [...sort(orderSortFn(parsePropFn), this.localDataItems)]
     },
     onClickTitle(key) {
       if (this.sortKey === key) {
@@ -98,48 +124,82 @@ export default {
         this.descendSort = true
       }
 
-      this.sortDataItems(key)
+      this.sortDataItems()
     },
     onClickEditBtn(item) {
       // eslint-disable-next-line no-alert
-      alert('TODO: item editing')
-      console.log(item)
+      alert('edit', item)
+    },
+    getCellContent(data) {
+      if (!this.filterText) {
+        return data
+      }
+
+      const regex = new RegExp(this.filterText, 'g')
+      const matched = data.match(regex) ? data.match(regex)[0] : null
+      const replaced = data.replace(regex, `<span class="highlight">${matched}</span>`)
+      return replaced
+    },
+    getParsePropFn(key) {
+      // TODO: implement passing parse function for each table column by props
+      switch (key) {
+        case 'height':
+          return compose(
+            x => x || -1,
+            parseFloat,
+            prop(key),
+          )
+
+        case 'mass':
+          return compose(
+            x => x || -1,
+            parseFloat,
+            prop(key),
+          )
+
+        case 'birth_year':
+          return compose(
+            x => x || -1,
+            parseFloat,
+            prop(key),
+          )
+
+        default:
+          return prop(key)
+      }
     },
   },
 }
 </script>
 
-<style lang="scss" scoped>
-*,
-*:after,
-*:before {
-  position: relative;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+<style lang="scss">
 .g-table {
-  &__input {
-    line-height: 22px;
-    font-size: 22px;
-    border: 1px solid #333;
-    margin-bottom: 20px;
+  &__top-row {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0;
+    padding: 0 5px;
   }
 
   &__table {
+    width: 100%;
     border-collapse: collapse;
   }
 }
 
 .table-head {
+  position: relative;
   min-width: 150px;
   background-color: #e0e0e0;
   color: #333;
   text-transform: uppercase;
   white-space: nowrap;
   font-size: 0.85em;
-  padding: 2px;
+  line-height: 2em;
+
+  &:not(:last-child) {
+    border-right: 1px solid #333;
+  }
 
   &:hover {
     cursor: pointer;
@@ -163,15 +223,30 @@ export default {
 }
 
 .table-row {
-  line-height: 25px;
+  line-height: 1.6em;
+
+  &:hover {
+    background-color: #eee;
+    .table-cell--actions {
+      opacity: 1;
+    }
+  }
 }
 
 .table-cell {
   border-top: 1px solid #eee;
   border-bottom: 1px solid #eee;
+
+  &--actions {
+    opacity: 0;
+  }
 }
 
 .edit-btn {
   min-width: 60px;
+}
+
+.highlight {
+  background-color: aquamarine;
 }
 </style>

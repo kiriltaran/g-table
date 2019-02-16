@@ -1,7 +1,11 @@
 <template>
   <div id="app">
     <div class="table-wrapper">
-      <GTable :data="tableData" />
+      <GTable
+        :data="tableData"
+        filtered
+        paginated
+      />
     </div>
   </div>
 </template>
@@ -38,11 +42,5 @@ export default {
       color: #42b983;
     }
   }
-}
-
-.table-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 </style>
