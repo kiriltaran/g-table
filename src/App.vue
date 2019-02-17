@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import GTable from '@/components/GTable.vue'
+import GTable from '@/components/GTable'
 import tableData from '../data.json'
 
 const EDIT_ALERT_TEXT = `Hi!

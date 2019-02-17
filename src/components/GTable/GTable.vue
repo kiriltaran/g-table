@@ -55,9 +55,9 @@
 </template>
 
 <script>
-import GTableFilter from '@/components/GTableFilter.vue'
-import GTablePagination from '@/components/GTablePagination.vue'
 import { descend, ascend, sort, prop, compose } from 'ramda'
+import GTableFilter from './GTableFilter.vue'
+import GTablePagination from './GTablePagination.vue'
 
 export default {
   name: 'GTable',
